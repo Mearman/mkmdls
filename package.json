@@ -1,0 +1,56 @@
+{
+  "bin": {
+    "make-markdown-listing": "dist/src/index.js",
+    "mdls": "dist/src/index.js",
+    "mkls": "dist/src/index.js",
+    "mkmdls": "dist/src/index.js",
+    "mmls": "dist/src/index.js"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "glob": "^11.0.0"
+  },
+  "description": "A CLI utility to generate markdown files from glob patterns.",
+  "devDependencies": {
+    "@types/node": "^20.14.11",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "src/**/*.ts"
+  ],
+  "keywords": [
+    "markdown",
+    "CLI",
+    "file listing",
+    "file tree",
+    "documentation",
+    "glob patterns",
+    "markdown generator",
+    "file system",
+    "code documentation",
+    "command line tool"
+  ],
+  "license": "Apache-2.0",
+  "main": "dist/src/lib.js",
+  "name": "mkmdls",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mearman/mkmdls.git"
+  },
+  "scripts": {
+    "build": "tsc",
+    "bump": "export VERSION=$(date +'%Y.%m.%d-%H%M%S') && npm version $VERSION --no-git-tag-version",
+    "prepare": "npm run build && chmod +x ./dist/src/index.js",
+    "start": "tsx --no-cache ./src/index.js"
+  },
+  "type": "module",
+  "types": "dist/src/index.d.ts",
+  "version": "2024.7.22-173427"
+}
