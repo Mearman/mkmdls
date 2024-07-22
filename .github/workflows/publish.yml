@@ -1,0 +1,108 @@
+name: Publish Package to npmjs
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/*.yml"
+      - "src/**/*.ts"
+      - "tsconfig.json"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://registry.npmjs.org"
+      - name: npm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+      - name: Set up Git user
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor_id }}+${{ github.actor }}@users.noreply.github.com"
+
+          # git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # git config user.name "github-actions[bot]"
+
+          # git config user.name github-actions
+          # git config user.email github-actions@github.com
+      ########################################
+      - run: npm run bump
+      - run: npm ci
+      ########################################
+      - name: Generate SBOM
+        run: npm run sbom
+      ########################################
+      - run: npm run build
+      ########################################
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v1
+        with:
+          subject-path: "${{ github.workspace }}/dist"
+          sbom-path: "${{ github.workspace }}/dist/sbom.spdx.json"
+      ########################################
+      - name: Attest Provenance
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: "${{ github.workspace }}/dist"
+      ########################################
+      - run: npm publish --provenance --access public
+        if: github.ref == 'refs/heads/main'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      ########################################
+      - id: get_version
+        run: |
+          VERSION=$(npm view . version)
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      ########################################
+      - run: |
+          git add package.json
+          npm install
+          git add package-lock.json
+          git commit -m v$VERSION
+          git push origin HEAD:main -o ci.skip
+          TARGET_COMMIT=$(git rev-parse HEAD)
+          echo "TARGET_COMMIT=$TARGET_COMMIT" >> $GITHUB_ENV
+          echo "TARGET_COMMIT=$TARGET_COMMIT" >> $GITHUB_OUTPUT
+        id: commit
+        env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
+      ########################################
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          registry-url: "https://npm.pkg.github.com"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm config set registry https://npm.pkg.github.com
+      - run: npm pkg set publishConfig.registry=https://npm.pkg.github.com
+      - run: npm pkg set name="@${{ github.repository }}"
+
+      - run: npm ci
+      - run: npm run build
+
+      - run: npm publish --provenance --access public
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**
+          fail_on_unmatched_files: true
+          name: v${{ steps.get_version.outputs.VERSION }}
+          target_commitish: ${{ steps.commit.outputs.TARGET_COMMIT }}
+          tag_name: v${{ steps.get_version.outputs.VERSION }}
+          body: |
+            [Package](https://github.com/${{ github.repository }}/pkgs/npm/${{ github.event.repository.name }})
