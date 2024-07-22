@@ -49,10 +49,11 @@ jobs:
       - run: npm run bump
       - run: npm ci
       ########################################
+      - run: npm run build
+      - run: npm pack --pack-destination dist
+      ########################################
       - name: Generate SBOM
         run: npm run sbom
-      ########################################
-      - run: npm run build
       ########################################
       - name: Attest SBOM
         uses: actions/attest-sbom@v1
