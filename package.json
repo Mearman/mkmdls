@@ -47,7 +47,7 @@
   "scripts": {
     "build": "tsc",
     "bump": "export VERSION=$(date +'%Y.%m.%d-%H%M%S') && npm version $VERSION --no-git-tag-version",
-    "postinstall": "npm run sbom",
+    "prebuild": "npm run sbom",
     "prepare": "npm run build && chmod +x ./dist/src/index.js",
     "sbom": "mkdir dist ; npm sbom --sbom-format spdx > dist/sbom.spdx.json",
     "start": "tsx --no-cache ./src/index.js"
